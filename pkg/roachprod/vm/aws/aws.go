@@ -148,6 +148,9 @@ func (d *ebsDisk) Set(s string) error {
 		if d.IOPs == 0 {
 			return errors.AssertionFailedf("Iops required for %s disk", d.VolumeType)
 		}
+	case "st1", "sc1":
+		// Nothing - size checked above.
+		d.IOPs = 0
 	default:
 		return errors.Errorf("Unknown EBS volume type %s", d.VolumeType)
 	}

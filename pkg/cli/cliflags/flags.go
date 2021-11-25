@@ -937,6 +937,15 @@ which use 'cockroach-data-tenant-X' for tenant 'X')
 `,
 	}
 
+	SharedStorage = FlagInfo{
+		Name: "shared-storage",
+		Description: `
+External storage URI (eg. S3, GCS) to be used to store cold files, or files
+shared across multiple nodes or stores. If not specified, all files are stored
+on local store directories.
+`,
+	}
+
 	StorageEngine = FlagInfo{
 		Name: "storage-engine",
 		Description: `

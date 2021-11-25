@@ -14,6 +14,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math"
 	"net"
 	"runtime"
 	"strconv"
@@ -23,6 +24,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/cockroach/pkg/base"
+	"github.com/cockroachdb/cockroach/pkg/cloud"
 	"github.com/cockroachdb/cockroach/pkg/clusterversion"
 	"github.com/cockroachdb/cockroach/pkg/config/zonepb"
 	"github.com/cockroachdb/cockroach/pkg/docs"
@@ -38,6 +40,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/util/humanizeutil"
 	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/cockroach/pkg/util/netutil"
+	"github.com/cockroachdb/cockroach/pkg/util/randutil"
 	"github.com/cockroachdb/cockroach/pkg/util/retry"
 	"github.com/cockroachdb/cockroach/pkg/util/tracing"
 	"github.com/cockroachdb/cockroach/pkg/util/uuid"
@@ -335,6 +338,12 @@ type KVConfig struct {
 	// in a timely fashion, typically 30s after the server starts listening.
 	DelayedBootstrapFn func()
 
+	// SharedStorage is an ExternalStorage-parsable URL that refers to storage
+	// that can be shared across stores or even nodes. Used to store cold data,
+	// or data more likely to be shared. If empty, all files are stored on the
+	// local stores (see StoreSpec).
+	SharedStorage string
+
 	enginesCreated bool
 }
 
@@ -546,6 +555,28 @@ func (cfg *Config) CreateEngines(ctx context.Context) (Engines, error) {
 
 	skipSizeCheck := cfg.TestingKnobs.Store != nil &&
 		cfg.TestingKnobs.Store.(*kvserver.StoreTestingKnobs).SkipMinSizeCheck
+	var sharedStorage vfs.FS
+	var sharedPath string
+	if cfg.SharedStorage != "" {
+		var err error
+		sharedPath = strings.TrimSpace(cfg.SharedStorage)
+		if strings.HasPrefix(sharedPath, "file:///") {
+			sharedStorage = vfs.Default
+			sharedPath = strings.TrimPrefix(sharedPath, "file://")
+		} else {
+			sharedStorage, err = cloud.VFSExternalStorageFromURI(ctx, sharedPath, cfg.ExternalIODirConfig, cfg.Settings, nil, cfg.User, nil, nil)
+			sharedPath = ""
+		}
+		if err != nil {
+			return Engines{}, err
+		}
+		//cachePath := vfs.Default.PathJoin(cfg.Stores.Specs[0].Path, "cache")
+		//if err := vfs.Default.MkdirAll(cachePath, 0755); err != nil {
+		//	return Engines{}, errors.Wrap(err, "creating store directory")
+		//}
+		//pebbleCache.AddSecondaryCache(cachePath, vfs.Default.(vfs.FSWithOpenForWrites), 16<<30)
+	}
+	rand, _ := randutil.NewPseudoRand()
 	for i, spec := range cfg.Stores.Specs {
 		log.Eventf(ctx, "initializing %+v", spec)
 		var sizeInBytes = spec.Size.InBytes
@@ -626,6 +657,11 @@ func (cfg *Config) CreateEngines(ctx context.Context) (Engines, error) {
 			pebbleConfig := storage.PebbleConfig{
 				StorageConfig: storageConfig,
 				Opts:          storage.DefaultPebbleOptions(),
+			}
+			if sharedStorage != nil {
+				pebbleConfig.Opts.SharedFS = sharedStorage
+				pebbleConfig.Opts.SharedDir = sharedPath
+				pebbleConfig.Opts.UniqueID = uint16(rand.Intn(math.MaxUint16))
 			}
 			pebbleConfig.Opts.Cache = pebbleCache
 			pebbleConfig.Opts.TableCache = tableCache

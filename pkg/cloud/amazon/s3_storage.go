@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -692,6 +693,7 @@ func s3ErrDelay(err error) time.Duration {
 		// arbitrary slowdown in that case.
 		// See http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
 		if s3err.StatusCode() == 503 {
+			fmt.Fprintf(os.Stderr, "s3 503 error seen: %s", err)
 			return time.Second * 5
 		}
 	}
