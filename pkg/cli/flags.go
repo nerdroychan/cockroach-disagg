@@ -452,11 +452,12 @@ func init() {
 		cliflagcfg.StringFlag(f, &serverCfg.Attrs, cliflags.Attrs)
 		cliflagcfg.VarFlag(f, &serverCfg.Locality, cliflags.Locality)
 
-		varFlag(f, &storeSpecs, cliflags.Store)
-		varFlag(f, &serverCfg.StorageEngine, cliflags.StorageEngine)
-		varFlag(f, &serverCfg.MaxOffset, cliflags.MaxOffset)
-		stringFlag(f, &serverCfg.SharedStorage, cliflags.SharedStorage)
-		stringFlag(f, &serverCfg.ClockDevicePath, cliflags.ClockDevice)
+		cliflagcfg.VarFlag(f, &storeSpecs, cliflags.Store)
+		cliflagcfg.VarFlag(f, &serverCfg.StorageEngine, cliflags.StorageEngine)
+		cliflagcfg.VarFlag(f, &serverCfg.MaxOffset, cliflags.MaxOffset)
+		cliflagcfg.StringFlag(f, &serverCfg.ClockDevicePath, cliflags.ClockDevice)
+
+		cliflagcfg.StringFlag(f, &serverCfg.SharedStorage, cliflags.SharedStorage)
 
 		cliflagcfg.StringFlag(f, &startCtx.listeningURLFile, cliflags.ListeningURLFile)
 

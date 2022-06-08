@@ -194,7 +194,7 @@ func (r *sstReader) cacheTheRest(b ioctx.ReadCloserCtx, offset int64, read int) 
 	r.cache.buf = scratch[:read2]
 }
 
-func (r *sstReader) readFromBody(p []byte, b ioctx.ReadCloserCtx, offset int64) (read int, err error, leaveBodyOpen bool) {
+func (r *sstReader) readFromBody(p []byte, b ioctx.ReadCloserCtx, offset int64) (read int, leaveBodyOpen bool, err error) {
 	for n := 0; read < len(p); n, err = b.Read(r.ctx, p[read:]) {
 		read += n
 		if err != nil {
@@ -203,27 +203,27 @@ func (r *sstReader) readFromBody(p []byte, b ioctx.ReadCloserCtx, offset int64) 
 	}
 	// If we got an EOF after we had read enough, ignore it.
 	if read == len(p) && err == io.EOF {
-		return read, nil, false
+		return read, false, nil
 	}
 	if read >= minReadSize || err != nil {
 		// No need to cache.
-		return read, err, false
+		return read, false, err
 	}
 
 	select {
 	case r.cache.sem <- struct{}{}:
 	default:
-		return read, err, false
+		return read, false, err
 	}
 
 	if r.cache.closed {
 		<-r.cache.sem
-		return read, err, false
+		return read, false, err
 	}
 
 	go r.cacheTheRest(b, offset, read)
 
-	return read, err, true
+	return read, true, err
 }
 
 // ReadAt implements io.ReaderAt by opening a Reader at an offset before reading
@@ -270,7 +270,7 @@ func (r *sstReader) ReadAt(p []byte, offset int64) (int, error) {
 
 	var leaveBodyOpen bool
 	var read2 int
-	read2, err, leaveBodyOpen = r.readFromBody(p[read:], b, offset)
+	read2, leaveBodyOpen, err = r.readFromBody(p[read:], b, offset)
 	read += read2
 	if !leaveBodyOpen {
 		_ = b.Close(r.ctx)

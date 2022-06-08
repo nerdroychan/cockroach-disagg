@@ -158,11 +158,12 @@ func VFSExternalStorageFromURI(
 	externalConfig base.ExternalIODirConfig,
 	settings *cluster.Settings,
 	blobClientFactory blobs.BlobClientFactory,
-	user security.SQLUsername,
+	user username.SQLUsername,
 	ie sqlutil.InternalExecutor,
 	kvDB *kv.DB,
+	limiters Limiters,
 ) (vfs.FS, error) {
-	es, err := ExternalStorageFromURI(ctx, uri, externalConfig, settings, blobClientFactory, user, ie, kvDB)
+	es, err := ExternalStorageFromURI(ctx, uri, externalConfig, settings, blobClientFactory, user, ie, kvDB, limiters)
 	if err != nil {
 		return nil, err
 	}

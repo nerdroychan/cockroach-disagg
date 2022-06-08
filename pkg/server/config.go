@@ -564,7 +564,7 @@ func (cfg *Config) CreateEngines(ctx context.Context) (Engines, error) {
 			sharedStorage = vfs.Default
 			sharedPath = strings.TrimPrefix(sharedPath, "file://")
 		} else {
-			sharedStorage, err = cloud.VFSExternalStorageFromURI(ctx, sharedPath, cfg.ExternalIODirConfig, cfg.Settings, nil, cfg.User, nil, nil)
+			sharedStorage, err = cloud.VFSExternalStorageFromURI(ctx, sharedPath, cfg.ExternalIODirConfig, cfg.Settings, nil, cfg.User, nil, nil, nil)
 			sharedPath = ""
 		}
 		if err != nil {

@@ -240,6 +240,7 @@ go_library(
         "//pkg/util/netutil/addr",
         "//pkg/util/protoutil",
         "//pkg/util/quotapool",
+        "//pkg/util/randutil",
         "//pkg/util/retry",
         "//pkg/util/stop",
         "//pkg/util/syncutil",

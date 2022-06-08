@@ -4,12 +4,14 @@ go_library(
     name = "cloud",
     srcs = [
         "cloud_io.go",
+        "external_sst_reader.go",
         "external_storage.go",
         "impl_registry.go",
         "kms.go",
         "kms_test_utils.go",
         "options.go",
         "uris.go",
+        "vfs_adapter.go",
     ],
     importpath = "github.com/cockroachdb/cockroach/pkg/cloud",
     visibility = ["//visibility:public"],
@@ -30,6 +32,8 @@ go_library(
         "//pkg/util/sysutil",
         "//pkg/util/tracing",
         "@com_github_cockroachdb_errors//:errors",
+        "@com_github_cockroachdb_pebble//sstable",
+        "@com_github_cockroachdb_pebble//vfs",
         "@com_github_stretchr_testify//require",
     ],
 )
